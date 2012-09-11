@@ -363,6 +363,7 @@ int main(int argc, char* argv[]) {
     char* pidfile = NULL;
     int opt;
     int foreground = 0;
+    int supplied_fd = -1;
 
 #ifdef ENABLE_SSL
     /* SSL */
@@ -375,7 +376,7 @@ int main(int argc, char* argv[]) {
     int retval;
 
     /* Parse arguments */
-    while ((opt = getopt(argc, argv, "l:b:p:C:K:f")) != -1) {
+    while ((opt = getopt(argc, argv, "l:b:p:s:C:K:f")) != -1) {
         if (opt == 'l') {
             listen_port = strdup(optarg);
         }
@@ -387,6 +388,10 @@ int main(int argc, char* argv[]) {
         }
         else if (opt == 'p') {
             pidfile = strdup(optarg);
+        }
+        else if (opt == 's') {
+            supplied_fd = atoi(optarg);
+            foreground = 2;
         }
 #ifdef ENABLE_SSL
         else if (opt == 'C') {
@@ -412,6 +417,7 @@ int main(int argc, char* argv[]) {
                     " [-l LISTENPORT]"
                     " [-b LISTENADDRESS]"
                     " [-p PIDFILE]"
+                    " [-s SOCKETFD]"
 #ifdef ENABLE_SSL
                     " [-C CERTIFICATE_FILE]"
                     " [-K PEM_FILE]"
@@ -430,6 +436,45 @@ int main(int argc, char* argv[]) {
 
     /* Log start */
     guacd_log_info("Guacamole proxy daemon (guacd) version " VERSION);
+
+    /* Handle the case where we have a supplied fd */
+    if (supplied_fd != -1) {
+
+        guac_socket* socket;
+
+        /* Ignore SIGPIPE */
+        if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+            guacd_log_info("Could not set handler for SIGPIPE to ignore. "
+                           "SIGPIPE may cause termination of the daemon.");
+        }
+
+        /* Ignore SIGCHLD (force automatic removal of children) */
+        if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
+            guacd_log_info("Could not set handler for SIGCHLD to ignore. "
+                           "Child processes may pile up in the process table.");
+        }
+
+#ifdef ENABLE_SSL
+        /* If SSL chosen, use it */
+        if (ssl_context != NULL) {
+            socket = guac_socket_open_secure(ssl_context, supplied_fd);
+            if (socket == NULL) {
+                guacd_log_guac_error("Error opening secure connection");
+                return 0;
+            }
+        }
+        else
+            socket = guac_socket_open(supplied_fd);
+#else
+        /* Open guac_socket */
+        socket = guac_socket_open(supplied_fd);
+#endif
+
+        guacd_handle_connection(socket);
+        close(supplied_fd);
+
+        return 0;
+    }
 
     /* Get addresses for binding */
     if ((retval = getaddrinfo(listen_address, listen_port,
