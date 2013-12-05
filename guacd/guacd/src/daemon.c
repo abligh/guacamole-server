@@ -303,7 +303,8 @@ void guacd_handle_connection_xml(int fd, char* xmlconfig) {
         char * value = xml_get_string(pDoc, argname);
         if (!value)
             value = strdup("");
-        guacd_log_info("Argument '%s' set to '%s'", plugin->args[i], value);
+	/* Don't do this as it logs passwords */
+        /* guacd_log_info("Argument '%s' set to '%s'", plugin->args[i], value); */
         protocol_argv[i]=value;
     }
 
