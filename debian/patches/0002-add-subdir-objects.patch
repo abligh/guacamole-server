@@ -1,0 +1,13 @@
+diff --git a/configure.ac b/configure.ac
+index 598a452..5d28d0f 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -37,7 +37,7 @@
+ 
+ AC_PREREQ([2.61])
+ AC_INIT([guacamole-server], [0.8.3])
+-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
++AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+ 
+ LT_PREREQ([2.2])
+ LT_INIT([dlopen])

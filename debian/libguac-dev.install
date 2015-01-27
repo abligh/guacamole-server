@@ -1,0 +1,3 @@
+usr/include/guacamole/*
+usr/lib/*/libguac.a
+usr/lib/*/libguac.so

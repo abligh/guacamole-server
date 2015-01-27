@@ -1,0 +1,90 @@
+guacamole-server (0.8.3-1) unstable; urgency=low
+
+  * Merge changes from 0.8.3
+  * Add build dependency on libpulse-dev
+  * Fix short descriptions for libguac-client-*
+  * Add patch for subdir-objects option of automake
+  * Migrate to debhelper version 9
+  * Add "Replaces" for legacy libguac1-dev
+  * Suppress guacd log messages within init script
+
+ -- Michael Jumper <mike.jumper@guac-dev.org>  Fri, 20 Sep 2013 10:51:00 -0700
+
+guacamole-server (0.8.2-1) UNRELEASED; urgency=low
+
+  * Merge changes from 0.8.2
+  * Migrate to new upstream source package (guacamole-server)
+
+ -- Michael Jumper <mike.jumper@guac-dev.org>  Mon, 8 Jul 2013 15:29:00 -0700
+
+guacd (0.7.0-2) UNRELEASED; urgency=low
+
+  * Clean up init.d script, move directory creation to init script (upstream
+    ticket #236)
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Thu, 13 Dec 2012 18:21:00 -0800
+
+guacd (0.7.0-1) UNRELEASED; urgency=low
+
+  * Merge latest changes from 0.7.0
+  * Update libguac dependencies
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Sat, 01 Dec 2012 14:36:18 -0800
+
+guacd (0.6.2-1) UNRELEASED; urgency=low
+
+  * Merge latest changes from 0.6.2 (closes: #685637)
+  * Fixed handling of useradd exit code (upstream ticket #194)
+  * Merge preinst into postinst to fix permissions issues with PID file
+    (upstream ticket #203)
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Mon, 15 Oct 2012 13:39:00 -0700
+
+guacd (0.6.1-2) UNRELEASED; urgency=low
+
+  * Run guacd only as unprivileged guacd user, created through install
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Thu, 23 Aug 2012 13:55:00 -0700
+
+guacd (0.6.1-1) UNRELEASED; urgency=low
+
+  * Merge latest changes from 0.6.1
+  * Switched to new guac-dev.org URL pattern in debian/watch
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Sat, 11 Aug 2012 13:44:00 -0700
+
+guacd (0.6.0-2) UNRELEASED; urgency=low
+
+  * Ensure HOME is set in init.d script (upstream bug #160)
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Fri, 20 Jun 2012 01:54:00 -0700
+
+guacd (0.6.0-1) unstable; urgency=low
+
+  * Merged latest changes from 0.6.0 (closes: #658371)
+  * Boosted policy compliance to 3.9.3 (no changes)
+  * Update build dependencies to latest compatible libguac
+  * Dropped debian/patches adopted upstream:
+    0001-add-missing-LICENSE.patch
+  * Switched to guac-dev.org URL pattern in debian/watch
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Fri, 4 May 2012 19:35:00 -0700
+
+guacd (0.5.0-1) unstable; urgency=low
+
+  * Merge latest changes from 0.5.0
+  * Removed patches which are now part of upstream
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Sat, 31 Dec 2011 17:27:00 -0800
+
+guacd (0.4.0-1) unstable; urgency=low
+
+  * Initial release (closes: #645259)
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Sat, 16 Jul 2011 12:35:00 -0700
+
+guacd (0.3.0-1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- Michael Jumper <zhangmaike@users.sourceforge.net>  Thu, 3 Mar 2011 01:37:03 -0800

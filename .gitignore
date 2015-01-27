@@ -46,3 +46,46 @@ tests/test_*
 # Generated docs
 doc/doxygen-output
 
+# debian build files
+compile
+debian/autoreconf.after
+debian/autoreconf.before
+debian/files
+debian/guacd.debhelper.log
+debian/guacd.postinst.debhelper
+debian/guacd.postrm.debhelper
+debian/guacd.prerm.debhelper
+debian/guacd.substvars
+debian/guacd/
+debian/libguac-client-rdp0.debhelper.log
+debian/libguac-client-rdp0.postinst.debhelper
+debian/libguac-client-rdp0.postrm.debhelper
+debian/libguac-client-rdp0.substvars
+debian/libguac-client-rdp0/
+debian/libguac-client-ssh0.debhelper.log
+debian/libguac-client-ssh0.postinst.debhelper
+debian/libguac-client-ssh0.postrm.debhelper
+debian/libguac-client-ssh0.substvars
+debian/libguac-client-ssh0/
+debian/libguac-client-vnc0.debhelper.log
+debian/libguac-client-vnc0.postinst.debhelper
+debian/libguac-client-vnc0.postrm.debhelper
+debian/libguac-client-vnc0.substvars
+debian/libguac-client-vnc0/
+debian/libguac-dev.debhelper.log
+debian/libguac-dev.substvars
+debian/libguac-dev/
+debian/libguac5.debhelper.log
+debian/libguac5.postinst.debhelper
+debian/libguac5.postrm.debhelper
+debian/libguac5.substvars
+debian/libguac5/
+debian/tmp/
+src/protocols/rdp/compat/.dirstamp
+src/protocols/rdp/guac_rdpdr/.dirstamp
+src/protocols/rdp/guac_rdpsnd/.dirstamp
+test-driver
+tests/client/.dirstamp
+tests/protocol/.dirstamp
+tests/test-suite.log
+tests/util/.dirstamp
