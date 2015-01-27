@@ -194,6 +194,11 @@ PKG_CHECK_MODULES([PANGO], [pango],, [have_pango=no]);
 PKG_CHECK_MODULES([PANGOCAIRO], [pangocairo],, [have_pango=no]);
 
 #
+# XML
+#
+PKG_CHECK_MODULES(XML, libxml-2.0)
+
+#
 # libVNCServer
 #
 

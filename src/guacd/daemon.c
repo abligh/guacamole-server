@@ -42,6 +42,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -69,8 +70,73 @@
 #include "client.h"
 #include "log.h"
 
+/* XML */
+#include <libxml2/libxml/parser.h>
+#include <libxml2/libxml/tree.h>
+#include <libxml2/libxml/xpath.h>
+#include <libxml2/libxml/xpathInternals.h>
+
 #define GUACD_DEV_NULL "/dev/null"
 #define GUACD_ROOT     "/"
+
+void xml_init () {
+    /* check the version. This calls xmlInitParser() */
+    /* braces to stop indent getting confused */
+    {LIBXML_TEST_VERSION}
+}
+
+void xml_deinit () {
+    xmlCleanupParser ();
+}
+
+xmlNodePtr xml_get_node (xmlDoc * pDoc, const char *xpathexpr) {
+    xmlChar *xpath_expr = (xmlChar *) xpathexpr;
+    xmlXPathContextPtr xpathCtx = NULL;
+    xmlXPathObjectPtr xpathObj = NULL;
+    xmlNodeSetPtr nodeSet = NULL;
+    int size;
+    xmlNodePtr myNode = NULL;
+
+    /* Create xpath evaluation context */
+    if (NULL == (xpathCtx = xmlXPathNewContext (pDoc)))
+        return NULL;
+
+    /* Evaluate xpath expression */
+    if (NULL == (xpathObj = xmlXPathEvalExpression (xpath_expr, xpathCtx))) {
+        xmlXPathFreeContext (xpathCtx);
+        return NULL;
+    }
+
+    nodeSet = xpathObj->nodesetval;
+    size = (nodeSet) ? nodeSet->nodeNr : 0;
+    if (size == 1)
+        myNode = nodeSet->nodeTab[0];
+
+    xmlXPathFreeObject (xpathObj);
+    xmlXPathFreeContext (xpathCtx);
+    return myNode;
+}
+
+char * xml_get_string (xmlDoc * pDoc, char *xpathexpr) {
+    xmlNodePtr config_node = NULL;
+    xmlChar *propval = NULL;
+
+    /* Find the node in question beneath the config node */
+    if (NULL == (config_node = xml_get_node (pDoc, xpathexpr)))
+        return NULL;
+
+    /* Find the property attached to that node; if it's not there, return 0 */
+    if (NULL == (propval = xmlNodeGetContent (config_node)))
+        return NULL;
+
+    /* We would like to just return propval here, but that's an xmlChar * allocated by
+     * libxml, and thus the caller can't just free() it - it would need to be xmlFree()'d.
+     * so we'll fiddle around and generate our own copy allocated with libc
+     */
+    char *value = strdup ((char *) propval);
+    xmlFree (propval);            /* as xmlGetProp makes a copy of the string */
+    return value;                 /* caller's responsibility to free() this */
+}
 
 void guacd_handle_connection(guac_socket* socket) {
 
@@ -336,6 +402,134 @@ int daemonize() {
 }
 
 
+void guacd_handle_connection_xml(guac_socket* socket, char* xml_config) {
+
+    guac_client* client = NULL;
+    guac_client_plugin* plugin = NULL;
+    char ** protocol_argv = NULL;
+    int protocol_argc = 0;
+    xmlDoc * pDoc = NULL;
+    char * protocol = NULL;
+    int init_result;
+
+    if (NULL == (pDoc = xmlParseMemory (xml_config, strlen(xml_config)))) {
+        guacd_log_guac_error("Could not parse XML");
+        goto error;
+    }
+
+    if (NULL == (protocol = xml_get_string(pDoc, "/params/protocol"))) {
+        guacd_log_guac_error("Could not parse XML");
+        goto error;
+    }
+
+    guacd_log_info("Opening protocol '%s'", protocol);
+
+    /* Get plugin from protocol in select */
+    if (NULL == (plugin = guac_client_plugin_open(protocol))) {
+        guacd_log_guac_error("Error loading client plugin");
+        goto error;
+    }
+
+    /* Now parse protocol strings */
+    const char ** arg;
+    const char * params = "/params/";
+    int lparams = strlen(params);
+    for (arg = plugin->args; *arg && **arg; arg++)
+        protocol_argc++;
+    if (NULL == (protocol_argv = calloc(sizeof(char *), protocol_argc+1))) {
+        guacd_log_guac_error("Cannot allocate protocol arguments");
+        goto error;
+    }
+
+    int i;
+    for (i=0; i<protocol_argc; i++) {
+        const char * p;
+        char * q;
+        int l = strlen(plugin->args[i]);
+        char * argname = malloc(lparams+l+1);
+        if (!argname) {
+            guacd_log_guac_error("Error duplicating argument list");
+            goto error;
+        }
+        strncpy(argname, params, lparams);
+        /* replace non-alpha characters by '_' for XML */
+        for (p = plugin->args[i], q = argname+lparams; *p; p++, q++)
+            *q = isalnum(*p)?*p:'_';
+        *q='\0';
+        char * value = xml_get_string(pDoc, argname);
+        if (!value)
+            value = strdup("");
+        guacd_log_info("Argument '%s' set to '%s'", plugin->args[i], value);
+        protocol_argv[i]=value;
+    }
+
+    guacd_log_info("Starting protocol %s, %d arguments", protocol, protocol_argc);
+
+    /* Get client */
+    client = guac_client_alloc();
+    client->socket = socket;
+    client->log_info_handler = guacd_client_log_info;
+    client->log_error_handler = guacd_client_log_error;
+
+    /* Store audio mimetypes */
+    client->info.audio_mimetypes = calloc(sizeof(char*), 1);
+
+    /* Store video mimetypes */
+    client->info.video_mimetypes = calloc(sizeof(char*), 1);
+
+    /* Init client */
+    init_result = guac_client_plugin_init_client(plugin,
+                client, protocol_argc, protocol_argv);
+
+    /* If client could not be started, free everything and fail */
+    if (init_result) {
+
+        guac_client_free(client);
+
+        guacd_log_guac_error("Error instantiating client");
+
+        if (guac_client_plugin_close(plugin))
+            guacd_log_guac_error("Error closing client plugin");
+
+        guac_socket_free(socket);
+        return;
+    }
+
+    /* Start client threads */
+    guacd_log_info("Starting client");
+    if (guacd_client_start(client))
+        guacd_log_error("Client finished abnormally");
+    else
+        guacd_log_info("Client finished normally");
+
+  error:
+    /* Clean up */
+    if (client) {
+        free (client->info.audio_mimetypes);
+        free (client->info.video_mimetypes);
+        guac_client_free(client);
+    }
+
+    if (plugin && guac_client_plugin_close(plugin))
+        guacd_log_error("Error closing client plugin");
+
+    /* Close socket */
+    guac_socket_free(socket);
+
+    if (protocol_argv) {
+        char **parg;
+        for (parg = protocol_argv ; *parg; parg++)
+            free(*parg);
+        free(protocol_argv);
+    }
+    if (pDoc)
+        xmlFreeDoc(pDoc);
+    if (protocol)
+        free (protocol);
+
+    return;
+}
+
 int main(int argc, char* argv[]) {
 
     /* Server */
@@ -363,6 +557,7 @@ int main(int argc, char* argv[]) {
     char* pidfile = NULL;
     int opt;
     int foreground = 0;
+    char* xml_config = NULL;
     int supplied_fd = -1;
 
 #ifdef ENABLE_SSL
@@ -375,8 +570,10 @@ int main(int argc, char* argv[]) {
     /* General */
     int retval;
 
+    xml_init();
+
     /* Parse arguments */
-    while ((opt = getopt(argc, argv, "l:b:p:s:C:K:f")) != -1) {
+    while ((opt = getopt(argc, argv, "l:b:p:s:x:C:K:f")) != -1) {
         if (opt == 'l') {
             listen_port = strdup(optarg);
         }
@@ -392,6 +589,9 @@ int main(int argc, char* argv[]) {
         else if (opt == 's') {
             supplied_fd = atoi(optarg);
             foreground = 2;
+        }
+        else if (opt == 'x') {
+            xml_config = strdup(optarg);
         }
 #ifdef ENABLE_SSL
         else if (opt == 'C') {
@@ -418,6 +618,7 @@ int main(int argc, char* argv[]) {
                     " [-b LISTENADDRESS]"
                     " [-p PIDFILE]"
                     " [-s SOCKETFD]"
+                    " [-x XMLCONFIG]"
 #ifdef ENABLE_SSL
                     " [-C CERTIFICATE_FILE]"
                     " [-K PEM_FILE]"
@@ -460,6 +661,7 @@ int main(int argc, char* argv[]) {
             socket = guac_socket_open_secure(ssl_context, supplied_fd);
             if (socket == NULL) {
                 guacd_log_guac_error("Error opening secure connection");
+                xml_deinit();
                 return 0;
             }
         }
@@ -470,9 +672,14 @@ int main(int argc, char* argv[]) {
         socket = guac_socket_open(supplied_fd);
 #endif
 
-        guacd_handle_connection(socket);
+        if (xml_config)
+            guacd_handle_connection_xml(socket, xml_config);
+        else
+            guacd_handle_connection(socket);
+
         close(supplied_fd);
 
+        xml_deinit();
         return 0;
     }
 
@@ -685,7 +892,10 @@ int main(int argc, char* argv[]) {
             socket = guac_socket_open(connected_socket_fd);
 #endif
 
-            guacd_handle_connection(socket);
+            if (xml_config)
+                guacd_handle_connection_xml(socket, xml_config);
+            else
+                guacd_handle_connection(socket);
             close(connected_socket_fd);
             return 0;
         }
@@ -704,6 +914,7 @@ int main(int argc, char* argv[]) {
         return 3;
     }
 
+    xml_deinit();
     return 0;
 
 }
