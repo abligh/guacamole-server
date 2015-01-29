@@ -89,3 +89,8 @@ tests/client/.dirstamp
 tests/protocol/.dirstamp
 tests/test-suite.log
 tests/util/.dirstamp
+
+debian/extility-guacamole-server.debhelper.log
+debian/extility-guacamole-server.substvars
+debian/extility-guacamole-server/
+tmp/

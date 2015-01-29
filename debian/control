@@ -8,6 +8,12 @@ Homepage: http://guac-dev.org/
 Vcs-Git: git://github.com/glyptodon/guacamole-server.git
 Vcs-Browser: https://github.com/glyptodon/guacamole-server
 
+Package: extility-guacamole-server
+Architecture: any
+Depends: libguac-client-rdp0, libguac5, guacd, libguac-client-vnc0
+Description: Extility guacamole server metapackage
+ This package installs the guacamole server components
+
 Package: libguac-dev
 Section: libdevel
 Architecture: any
