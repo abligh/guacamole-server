@@ -416,6 +416,10 @@ then
                      [[#include <freerdp/freerdp.h>]])
 fi
 
+AC_CHECK_MEMBERS([rdpSettings.preconnection_id, rdpSettings.security_layer_negotiation, rdpSettings.preconnection_blob],
+                 [], [],
+                 [[#include <freerdp/freerdp.h>]])
+
 # Set defines based on interface type, warn if unknown
 if test "x${rdpsettings_interface}" = "xlegacy"; then
     AC_DEFINE([LEGACY_RDPSETTINGS])

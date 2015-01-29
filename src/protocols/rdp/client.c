@@ -112,6 +112,9 @@ const char* GUAC_CLIENT_ARGS[] = {
     "security",
     "ignore-cert",
     "disable-auth",
+    "security-layer-negotiation",
+    "preconnection-id",
+    "preconnection-blob",
     NULL
 };
 
@@ -134,6 +137,9 @@ enum RDP_ARGS_IDX {
     IDX_SECURITY,
     IDX_IGNORE_CERT,
     IDX_DISABLE_AUTH,
+    IDX_SECURITY_LAYER_NEGOTIATION,
+    IDX_PRECONNECTION_ID,
+    IDX_PRECONNECTION_BLOB,
     RDP_ARGS_COUNT
 };
 
@@ -448,6 +454,16 @@ int guac_client_init(guac_client* client, int argc, char** argv) {
     /* Certificate and auth */
     settings->ignore_certificate = (strcmp(argv[IDX_IGNORE_CERT], "true") == 0);
     settings->disable_authentication = (strcmp(argv[IDX_DISABLE_AUTH], "true") == 0);
+
+    settings->security_layer_negotiation = true;
+    if (argv[IDX_SECURITY_LAYER_NEGOTIATION][0] != '\0')
+        settings->security_layer_negotiation = (strcmp(argv[IDX_SECURITY_LAYER_NEGOTIATION], "true") == 0);
+    if (argv[IDX_PRECONNECTION_ID][0] != '\0') {
+        settings->preconnection_id = atoi(argv[IDX_PRECONNECTION_ID]);
+    }
+    if (argv[IDX_PRECONNECTION_BLOB][0] != '\0') {
+        settings->preconnection_blob = strdup(argv[IDX_PRECONNECTION_BLOB]);
+    }
 
     /* NLA security */
     if (strcmp(argv[IDX_SECURITY], "nla") == 0) {

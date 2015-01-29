@@ -182,6 +182,10 @@ typedef struct guac_rdp_settings {
      */
     int disable_authentication;
 
+    int security_layer_negotiation;
+    char* preconnection_blob;
+    int preconnection_id;
+
 } guac_rdp_settings;
 
 
